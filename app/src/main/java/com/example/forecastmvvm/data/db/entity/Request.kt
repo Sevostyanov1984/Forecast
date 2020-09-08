@@ -1,7 +1,5 @@
-package com.example.forecastmvvm.data.response
+package com.example.forecastmvvm.data.db.entity
 
-
-import com.google.gson.annotations.SerializedName
 
 data class Request(
     val type: String,

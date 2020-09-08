@@ -1,6 +1,6 @@
 package com.example.forecastmvvm.data
 
-import com.example.forecastmvvm.data.response.CurrentWeatherResponse
+import com.example.forecastmvvm.data.network.response.CurrentWeatherResponse
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import kotlinx.coroutines.Deferred
 import okhttp3.Interceptor
@@ -10,7 +10,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
-import java.util.logging.Level
 
 const val API_KEY = "3dfb3d850a43735e3f8b9f00e7aca2ad"
 
