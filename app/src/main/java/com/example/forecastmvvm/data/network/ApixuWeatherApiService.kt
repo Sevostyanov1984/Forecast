@@ -1,4 +1,4 @@
-package com.example.forecastmvvm.data
+package com.example.forecastmvvm.data.network
 
 import com.example.forecastmvvm.data.network.response.CurrentWeatherResponse
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
@@ -26,12 +26,14 @@ interface ApixuWeatherApiService {
 
     companion object{
         // прочитать про invoke
-        operator fun invoke(): ApixuWeatherApiService{
+        operator fun invoke(
+            connectivityInterceptor: ConnectivityInterceptor
+        ): ApixuWeatherApiService {
             val requestInterceptor = Interceptor { chain ->
                     val url = chain.request()
                         .url()
                         .newBuilder()
-                        .addQueryParameter("access_key", com.example.forecastmvvm.data.API_KEY)
+                        .addQueryParameter("access_key", API_KEY)
                         .build()
 
                     val request = chain.request()
@@ -47,6 +49,7 @@ interface ApixuWeatherApiService {
 
             val okHttpClient = OkHttpClient.Builder()
                 .addInterceptor(requestInterceptor)
+                .addInterceptor(connectivityInterceptor)
                 .addInterceptor(log)
                 .build()
 
