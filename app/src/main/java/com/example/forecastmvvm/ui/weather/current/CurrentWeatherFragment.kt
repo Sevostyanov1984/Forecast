@@ -46,6 +46,7 @@ class CurrentWeatherFragment : Fragment() {
         Observer { textView.text = it.toString() })
 
 
+        // Using GlobalScope in fragments is a bad practice. Fragment may be destroyed while request wasn't completed.
         GlobalScope.launch(Dispatchers.Main) {
         //    val currentWeatherResponse = apiService.getCurrentWeather("London").await()
         //    textView.text = currentWeatherResponse.toString()
