@@ -7,22 +7,26 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModel
 
 import com.example.forecastmvvm.R
 import com.example.forecastmvvm.data.network.ApixuWeatherApiService
 import com.example.forecastmvvm.data.network.ConnectivityInterceptorImpl
 import com.example.forecastmvvm.data.network.WeatherNetworkDataSourceImpl
+import com.example.forecastmvvm.ui.base.ScopedFragment
 import kotlinx.android.synthetic.main.current_weather_fragment.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.kodein.di.Kodein
+import org.kodein.di.KodeinAware
+import org.kodein.di.android.x.closestKodein
+import org.kodein.di.generic.instance
 
-class CurrentWeatherFragment : Fragment() {
+class CurrentWeatherFragment : ScopedFragment(), KodeinAware {
 
-    companion object {
-        fun newInstance() =
-            CurrentWeatherFragment()
-    }
+    override val kodein by closestKodein()
+    private val ViewModelFactory: CurrentWeatherViewModelFactory by instance()
 
     private lateinit var viewModel: CurrentWeatherViewModel
 
@@ -35,22 +39,20 @@ class CurrentWeatherFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(CurrentWeatherViewModel::class.java)
-        // TODO: Use the ViewModel
+        viewModel = ViewModelProviders.of(this, ViewModelFactory)
+            .get(CurrentWeatherViewModel::class.java)
 
+        bindUi()
+    }
 
-        val apiService = ApixuWeatherApiService(ConnectivityInterceptorImpl(this.context!!))
-        val weatherNetworkDataSource = WeatherNetworkDataSourceImpl(apiService)
-
-        weatherNetworkDataSource.downloadedCurrentWeather.observe(this,
-        Observer { textView.text = it.toString() })
-
-
-        // Using GlobalScope in fragments is a bad practice. Fragment may be destroyed while request wasn't completed.
-        GlobalScope.launch(Dispatchers.Main) {
-        //    val currentWeatherResponse = apiService.getCurrentWeather("London").await()
-        //    textView.text = currentWeatherResponse.toString()
-            weatherNetworkDataSource.fetchCurrentWeather("London")
-        }
+    // текущий фрагмент наследуется от ScopedFragment, который в свою очередь имплементирует CoroutineScope
+    // соответственно можно сразу запускать launch (GlobalScope.launch во фрагментах делать нельзя из-за lifecycle)
+    private fun bindUi() = launch{
+        val currentWeather = viewModel.weather.await()
+        currentWeather.observe(this@CurrentWeatherFragment, Observer {
+            // если в бд нет записи, то textView.text = it.toString() вернет ошибку, поэтому просто заверщшаем функцию
+            if (it == null) return@Observer
+            textView.text = it.toString()
+        })
     }
 }

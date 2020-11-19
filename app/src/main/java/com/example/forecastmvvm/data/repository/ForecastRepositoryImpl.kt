@@ -1,18 +1,15 @@
 package com.example.forecastmvvm.data.repository
 
-import android.icu.util.TimeZone
 import androidx.lifecycle.LiveData
 import com.example.forecastmvvm.data.db.CurrentWeatherDao
 import com.example.forecastmvvm.data.db.entity.CurrentWeatherEntry
 import com.example.forecastmvvm.data.network.WeatherNetworkDataSource
-import com.example.forecastmvvm.data.network.WeatherNetworkDataSourceImpl
 import com.example.forecastmvvm.data.network.response.CurrentWeatherResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.threeten.bp.ZonedDateTime
-import java.util.*
 
 class ForecastRepositoryImpl (
     private val currentWeatherDao: CurrentWeatherDao,
@@ -20,9 +17,15 @@ class ForecastRepositoryImpl (
 ) : ForecastRepository {
     //в инит блоке определяются обсерверы на livedata
     init {
-        weatherNetworkDataSource.downloadedCurrentWeather.observeForever{ // no lifecycle, so observeForever
+        // репозиторий не имеет lifecycle, поэтому можно использовать observeForever
+        weatherNetworkDataSource.downloadedCurrentWeather.observeForever{
             newCurrentWeather -> persistFetchedCurrentWeather(newCurrentWeather)
-
+        }
+    }
+    // save data in local storage
+    private fun persistFetchedCurrentWeather(fetchedWeather: CurrentWeatherResponse){
+        GlobalScope.launch(Dispatchers.IO) { // no lifecycle, so GlobalScope
+            currentWeatherDao.insert(fetchedWeather.currentWeatherEntry)
         }
     }
 
@@ -30,13 +33,6 @@ class ForecastRepositoryImpl (
         return withContext(Dispatchers.IO) {
             initWeatherData()
             return@withContext currentWeatherDao.getWeather()
-        }
-    }
-
-    // save data in local storage
-    private fun persistFetchedCurrentWeather(fetchedWeather: CurrentWeatherResponse){
-        GlobalScope.launch(Dispatchers.IO) { // no lifecycle, so GlobalScope
-            currentWeatherDao.upsert(fetchedWeather.currentWeatherEntry)
         }
     }
 
@@ -54,5 +50,4 @@ class ForecastRepositoryImpl (
         val thirtyMinutesAgo = ZonedDateTime.now().minusMinutes(30)
         return lastFetchTime.isBefore(thirtyMinutesAgo)
     }
-
 }
